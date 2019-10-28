@@ -22,18 +22,21 @@ $http->on('WorkerStart', function (swoole_server $server, $worker_id){
 
 $http->on('request', function($request, $response){
 	// 转换swoole request为 thinkphp request
+    $_SERVER = []; // 清除缓存
 	if(isset($request->server)){
 		foreach ($request->server as $k => $v){
 			$_SERVER[$k] = $v;
 		}
 	}
 
+    $_GET = [];
 	if(isset($request->get)){
 		foreach ($request->get as $k => $v){
 			$_GET[$k] = $v;
 		}
 	}
 
+	$_POST = [];
 	if(isset($request->post)){
 		foreach ($request->post as $k => $v){
 			$_POST[$k] = $v;
@@ -46,6 +49,7 @@ $http->on('request', function($request, $response){
 	Container::get('app', [defined('APP_PATH') ? APP_PATH : ''])
 		->run()
 		->send();
+    echo '--action--'.request()->action();
 
 	$res = ob_get_contents();
 	ob_end_clean();

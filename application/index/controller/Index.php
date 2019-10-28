@@ -5,7 +5,7 @@ class Index
 {
     public function index()
     {
-        print_r($_GET['ms']);
+        print_r($_GET);
         return 'haha';
     }
 
