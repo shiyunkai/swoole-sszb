@@ -13,7 +13,7 @@ $http->set(
 		'worker_num' => 5
 	]
 );
-// worker进程开户时
+// worker进程开启时
 $http->on('WorkerStart', function (swoole_server $server, $worker_id){
 	// ThinkPHP 引导文件,
 	define('APP_PATH', __DIR__ . '/../application/');
@@ -49,12 +49,13 @@ $http->on('request', function($request, $response){
 	Container::get('app', [defined('APP_PATH') ? APP_PATH : ''])
 		->run()
 		->send();
-    echo '--action--'.request()->action();
+//    echo '--action--'.request()->action();
 
 	$res = ob_get_contents();
 	ob_end_clean();
 
 	$response->end($res);
+
 });
 
 
