@@ -63,7 +63,7 @@ class Predis
             return $this->redis->set($key, $value);
         }
 
-        return $this->redis->setex($key,$value,$time);
+        return $this->redis->setex($key,$time,$value);
     }
 
     /**

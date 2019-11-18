@@ -63,8 +63,21 @@ class Login
         // generate a random number
         $code = rand(1000,9999);
 
-        // redis save
+        // 异步任务发送短信
+        $taskData = [
+            'method' => 'sendSms',
+            'data' => [
+                'phone' => $phoneNum,
+                'code' => $code
+            ]
 
+        ];
+
+        $_POST['http_server']->task($taskData);
+
+        return Util::show(config('code.success'),'验证码发送成功');
+
+/*        // redis save
         try{
             $response = Sms::sendSms($phoneNum,$code);
 
@@ -81,7 +94,7 @@ class Login
 
         }catch (\Exception $e){
             return Util::show(config('code.error'),'sms exception');
-        }
+        }*/
 
 
     }

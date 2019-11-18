@@ -40,7 +40,7 @@ class Sms{
 	    $result = $ssender->sendWithParam("86", $phone, self::TEMPLATE_ID,
         $params, self::SMS_SIGN, "", "");
 
-        return $result;
+        return json_decode($result);
 
     }
 }
