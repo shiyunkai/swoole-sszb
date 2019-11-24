@@ -67,6 +67,15 @@ class Predis
     }
 
     /**
+     *  删除key
+     * @param $key
+     * @return int
+     */
+    public function del($key){
+        return $this->redis->del($key);
+    }
+
+    /**
      *  获取key
      * @param $key
      * @return bool|string
@@ -77,6 +86,51 @@ class Predis
         }
 
         return $this->redis->get($key);
+    }
+
+//    /**
+//     * 添加到有序集合
+//     * @param $key
+//     * @param $value
+//     * @return mixed
+//     */
+//    public function sAdd($key, $value){
+//        return $this->redis->sAdd($key, $value);
+//    }
+//
+//
+//    /**
+//     *  删除有序集合中的值
+//     * @param $key
+//     * @param $value
+//     * @return mixed
+//     */
+//    public function sRem($key, $value){
+//        return $this->redis->sRem($key, $value);
+//    }
+
+    /**
+     *  获取有序集合中的值g
+     * @param $key
+     * @return array
+     */
+    public function sMembers($key){
+        return $this->redis->sMembers($key);
+    }
+
+
+    /**
+     *  使用魔术方法可以省略　sAdd sRem 方法的编写
+     * @param $name
+     * @param $arguments
+     * @return string
+     */
+    public function __call($name, $arguments){
+
+        if(count($arguments) == 2){
+            return $this->redis->$name($arguments[0],$arguments[1]);
+        }
+
     }
 
 

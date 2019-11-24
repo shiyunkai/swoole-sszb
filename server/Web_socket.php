@@ -7,6 +7,7 @@
  */
 
 use think\Container;
+use app\common\lib\redis\Predis;
 use app\common\lib\RedisUtil;
 use app\common\lib\Sms;
 use app\common\lib\Util;
@@ -34,7 +35,7 @@ class Web_socket
                 'task_worker_num' => 4,
                 // 设置静态资源
                 'enable_static_handler' => true,
-                'document_root' => "/home/python/php/workspace/swoole-sszb/public/static/",
+                'document_root' => "/home/python/php/workspace/swoole-sszb/public/static",
             ]
         );
 
@@ -51,9 +52,20 @@ class Web_socket
         $this->ws->start();
     }
 
+    public function onWorkerStart($server, $worker_id){
+        // ThinkPHP 引导文件,
+        define('APP_PATH', __DIR__ . '/../application/');
+        require __DIR__ . '/../thinkphp/start.php';
+
+        // 重启时删除redis中的客户端id
+        Predis::getInstance()->del(config('redis.live_game_key'));
+    }
+
     // 监听连接事件
     public function onOpen($ws, $request){
-        var_dump($request->fd);
+        Predis::getInstance()->sAdd(config('redis.live_game_key'),$request->fd);
+
+        var_dump('client:'.$request->fd.' connect');
     }
 
     // 监听客户端消息事件
@@ -69,11 +81,6 @@ class Web_socket
         $ws->push($frame->fd, "server-push:".date("Y-m-d H:i:s"));
     }
 
-    public function onWorkerStart($server, $worker_id){
-        // ThinkPHP 引导文件,
-        define('APP_PATH', __DIR__ . '/../application/');
-        require __DIR__ . '/../thinkphp/start.php';
-    }
 
     public function onRequest($request, $response){
         // 转换swoole request为 thinkphp request
@@ -95,6 +102,13 @@ class Web_socket
         if(isset($request->post)){
             foreach ($request->post as $k => $v){
                 $_POST[$k] = $v;
+            }
+        }
+
+        $_FILES = [];
+        if(isset($request->files)){
+            foreach ($request->files as $k => $v){
+                $_FILES[$k] = $v;
             }
         }
 
@@ -127,7 +141,7 @@ class Web_socket
         // 分发task任务机制，让不同的任务，走不同的逻辑
         $obj = new app\common\lib\task\Task;
         $method = $data['method'];
-        $flag = $obj->$method($data['data']);
+        $flag = $obj->$method($data['data'], $serv);
 
         return $flag;
 //        $response = Sms::sendSms($data['phone'],$data['code']);
@@ -150,7 +164,9 @@ class Web_socket
     }
 
     public function onClose($ws, $fd){
-        echo "clientid:{$fd}\n";
+        Predis::getInstance()->sRem(config('redis.live_game_key'),$fd);
+
+        echo "client:{$fd} close\n";
     }
 
 }

@@ -19,8 +19,9 @@ class Task
     /**
      *  异步发送验证码
      * @param $data
+     * @param $serv swoole server对象
      */
-    public function sendSms($data){
+    public function sendSms($data, $serv){
         $response = Sms::sendSms($data['phone'],$data['code']);
         dump($response);
         //if($response->result == 0){
@@ -47,6 +48,23 @@ class Task
 
         return true;
 
+
+    }
+
+    /**
+     *  发送赛况给客户端
+     * @param $data
+     * @param $serv swoole server对象
+     */
+    public function pushLive($data, $serv){
+
+        $clients = Predis::getInstance()->sMembers(config('redis.live_game_key'));
+
+        foreach ($clients as $client){
+            $serv->push($client,
+                Util::show(config('code.success'),'success',$data)
+            );
+        }
 
     }
 
