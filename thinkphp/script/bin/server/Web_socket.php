@@ -1,5 +1,7 @@
 <?php
 /**
+ * 封装web_socket类
+ * web_socket是基于http的，所以可以用http访问
  * Created by PhpStorm.
  * User: python
  * Date: 19-11-6
@@ -12,15 +14,12 @@ use app\common\lib\RedisUtil;
 use app\common\lib\Sms;
 use app\common\lib\Util;
 
-/**
- *  封装web_socket类
- *  web_socket是基于http的，所以可以用http访问
- * Class Http
- */
+
 class Web_socket
 {
     CONST HOST = "0.0.0.0";
     CONST PORT = 8811;
+    CONST CHART_PORT = 8812;
 
     private $ws = null;
 
@@ -29,6 +28,10 @@ class Web_socket
         $this->ws = new swoole_websocket_server(
             self::HOST, self::PORT
         );
+
+        // 监听8812端口
+        $this->ws->listen(self::HOST,self::CHART_PORT,SWOOLE_SOCK_TCP);
+
         $this->ws->set(
             [
                 'worker_num' => 4,
@@ -54,8 +57,8 @@ class Web_socket
 
     public function onWorkerStart($server, $worker_id){
         // ThinkPHP 引导文件,
-        define('APP_PATH', __DIR__ . '/../application/');
-        require __DIR__ . '/../thinkphp/start.php';
+        define('APP_PATH', __DIR__ . '/../../../../application/');
+        require __DIR__ . '/../../../../thinkphp/start.php';
 
         // 重启时删除redis中的客户端id
         Predis::getInstance()->del(config('redis.live_game_key'));
@@ -111,6 +114,8 @@ class Web_socket
                 $_FILES[$k] = $v;
             }
         }
+
+        $this->writeLog();
 
         // 传递当前对象
         $_POST['http_server'] = $this->ws;
@@ -169,6 +174,29 @@ class Web_socket
         echo "client:{$fd} close\n";
     }
 
+    /**
+     *  记录日志
+     */
+    public function writeLog(){
+        $datas = array_merge(['date'=>date('Ymd H:i:s')],$_GET,$_POST,$_SERVER);
+
+        $logs = "";
+
+        foreach ($datas as $key => $value){
+            $logs .= $key . ":" .$value . " ";
+        }
+
+        swoole_async_writefile(APP_PATH.'../runtime/log/'.date('Ym')."/".date("d")."_access.log",
+        $logs.PHP_EOL, function($filename){
+
+        }, FILE_APPEND);
+
+    }
+
 }
 
 $obj = new Web_socket();
+
+
+// 系统监控
+// netstat -anp | grep 8811 定时任务　crontab => swoole 定时器
